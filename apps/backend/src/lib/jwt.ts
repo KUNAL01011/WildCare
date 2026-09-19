@@ -2,6 +2,7 @@
 import * as jose from "jose";
 import { env } from "../config/env.js";
 import crypto from "node:crypto";
+import type { UserRole } from "../generated/prisma/client.js";
 
 // ─── Key helpers ─────────────────────────────────────────────────────────────
 
@@ -15,6 +16,7 @@ const otpVerifySecret = encode(env.OTP_VERIFY_SECRET);
 
 export interface AccessTokenPayload {
   userId: string;
+  role: UserRole;
   type: "access";
 }
 
@@ -31,9 +33,13 @@ export interface EmailVerificationTokenPayload {
 
 // ─── Access Token ─────────────────────────────────────────────────────────────
 
-export async function signAccessToken(userId: string): Promise<string> {
+export async function signAccessToken(
+  userId: string,
+  role: UserRole
+): Promise<string> {
   return new jose.SignJWT({
     userId,
+    role,
     type: "access",
   } satisfies AccessTokenPayload)
     .setProtectedHeader({ alg: "HS256" })

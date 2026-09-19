@@ -10,6 +10,8 @@ import {
 } from "./auth.service.js";
 import {
   loginSchema,
+  logoutSchema,
+  refreshSchema,
   registerSchema,
   verifyEmailSchema,
 } from "./auth.validation.js";
@@ -54,6 +56,14 @@ export const loginController = asyncHandler(
     const input = loginSchema.parse(req.body);
     const { accessToken, refreshToken, user } = await login(input);
 
+    if (input.client === "MOBILE") {
+      res.status(200).json({
+        success: true,
+        data: { user, accessToken, refreshToken },
+      });
+      return;
+    }
+
     res
       .cookie("accessToken", accessToken, accessTokenCookieOptions)
       .cookie("refreshToken", refreshToken, refreshTokenCookieOptions)
@@ -65,7 +75,9 @@ export const loginController = asyncHandler(
 
 export const refreshController = asyncHandler(
   async (req: Request, res: Response) => {
-    const rawRefreshToken = req.cookies?.refreshToken as string | undefined;
+    const input = refreshSchema.parse(req.body);
+    const cookieRefreshToken = req.cookies?.refreshToken as string | undefined;
+    const rawRefreshToken = cookieRefreshToken ?? input.refreshToken;
 
     if (!rawRefreshToken) {
       throw new AppError(
@@ -77,6 +89,14 @@ export const refreshController = asyncHandler(
 
     const { accessToken, refreshToken } = await refresh(rawRefreshToken);
 
+    if (!cookieRefreshToken) {
+      res.status(200).json({
+        success: true,
+        data: { accessToken, refreshToken },
+      });
+      return;
+    }
+
     res
       .cookie("accessToken", accessToken, accessTokenCookieOptions)
       .cookie("refreshToken", refreshToken, refreshTokenCookieOptions)
@@ -87,7 +107,9 @@ export const refreshController = asyncHandler(
 
 export const logoutController = asyncHandler(
   async (req: Request, res: Response) => {
-    const rawRefreshToken = req.cookies?.refreshToken as string | undefined;
+    const input = logoutSchema.parse(req.body);
+    const rawRefreshToken =
+      (req.cookies?.refreshToken as string | undefined) ?? input.refreshToken;
 
     if (rawRefreshToken) {
       await logout(rawRefreshToken);

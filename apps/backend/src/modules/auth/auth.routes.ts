@@ -1,16 +1,27 @@
 import { Router } from "express";
-import { getMeController, loginController, logoutController, refreshController, registerController, resendOtpController, verifyEmailController } from "./auth.controller.js";
+import {
+  getMeController,
+  loginController,
+  logoutController,
+  refreshController,
+  registerController,
+  resendOtpController,
+  verifyEmailController,
+} from "./auth.controller.js";
 import {
   authRateLimiter,
   otpRateLimiter,
 } from "../../core/middleware/rate-limit.middleware.js";
-import { authenticateMiddleware, verifyEmailTokenMiddleware } from "@/core/middleware/auth.middleware.js";
+import {
+  authenticateMiddleware,
+  verifyEmailTokenMiddleware,
+} from "@/core/middleware/auth.middleware.js";
 
 const router = Router();
 
 /**
  * @openapi
- * /api/auth/register:
+ * /api/v1/auth/register:
  *   post:
  *     tags:
  *       - Auth
@@ -56,11 +67,10 @@ const router = Router();
  */
 router.post("/register", authRateLimiter, registerController);
 
-
 // ─── Verify Email ─────────────────────────────────────────────────────────────
 /**
  * @openapi
- * /api/auth/verify-email:
+ * /api/v1/auth/verify-email:
  *   post:
  *     tags: [Auth]
  *     summary: Verify email with OTP
@@ -109,7 +119,7 @@ router.post(
 // ─── Resend OTP ───────────────────────────────────────────────────────────────
 /**
  * @openapi
- * /api/auth/resend-otp:
+ * /api/v1/auth/resend-otp:
  *   post:
  *     tags: [Auth]
  *     summary: Resend verification OTP
@@ -150,7 +160,7 @@ router.post(
 // ─── Login ────────────────────────────────────────────────────────────────────
 /**
  * @openapi
- * /api/auth/login:
+ * /api/v1/auth/login:
  *   post:
  *     tags: [Auth]
  *     summary: Login
@@ -197,7 +207,7 @@ router.post("/login", authRateLimiter, loginController);
 // ─── Refresh ──────────────────────────────────────────────────────────────────
 /**
  * @openapi
- * /api/auth/refresh:
+ * /api/v1/auth/refresh:
  *   post:
  *     tags: [Auth]
  *     summary: Refresh access token
@@ -223,7 +233,7 @@ router.post("/refresh", refreshController);
 // ─── Logout ───────────────────────────────────────────────────────────────────
 /**
  * @openapi
- * /api/auth/logout:
+ * /api/v1/auth/logout:
  *   post:
  *     tags: [Auth]
  *     summary: Logout
@@ -243,7 +253,7 @@ router.post("/logout", logoutController);
 // ─── Me ───────────────────────────────────────────────────────────────────────
 /**
  * @openapi
- * /api/auth/me:
+ * /api/v1/auth/me:
  *   get:
  *     tags: [Auth]
  *     summary: Get current user

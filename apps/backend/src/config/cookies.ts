@@ -9,7 +9,7 @@ export const accessTokenCookieOptions: CookieOptions = {
   secure: isProd,
   sameSite: "lax", // proxy makes all requests same-origin, lax works everywhere
   path: "/",
-  maxAge: 10 * 1000,
+  maxAge: 15 * 60 * 1000,
 };
 
 export const refreshTokenCookieOptions: CookieOptions = {

@@ -6,7 +6,7 @@ import { verifyAccessToken, verifyEmailVerificationToken } from "@/lib/jwt.js";
 declare global {
   namespace Express {
     interface Request {
-      user?: { id: string };
+      user?: { id: string; role: "CITIZEN" | "RESPONDER" | "ADMIN" };
     }
   }
 }
@@ -18,7 +18,11 @@ export async function authenticateMiddleware(
   next: NextFunction
 ) {
   try {
-    const token = req.cookies?.accessToken as string | undefined;
+    const cookieToken = req.cookies?.accessToken as string | undefined;
+    const authorizationToken = req.headers.authorization?.startsWith("Bearer ")
+      ? req.headers.authorization.slice(7)
+      : undefined;
+    const token = cookieToken ?? authorizationToken;
 
     if (!token) {
       throw new AppError(
@@ -29,7 +33,7 @@ export async function authenticateMiddleware(
     }
 
     const payload = await verifyAccessToken(token);
-    req.user = { id: payload.userId };
+    req.user = { id: payload.userId, role: payload.role };
     next();
   } catch (err) {
     if (err instanceof AppError) return next(err);

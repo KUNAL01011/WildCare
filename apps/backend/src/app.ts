@@ -44,7 +44,7 @@ app.use("/health", healthRoutes);
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // 8. Application routes
-app.use("/api/auth", authRoutes);
+app.use("/api/v1/auth", authRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

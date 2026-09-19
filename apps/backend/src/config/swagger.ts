@@ -3,13 +3,13 @@ import swaggerJSDoc from "swagger-jsdoc";
 const swaggerDefinition = {
   openapi: "3.0.0",
   info: {
-    title: "TransitOps API",
+    title: "WildCare API",
     version: "1.0.0",
-    description: "API documentation for TransitOps",
+    description: "WildCare API documentation",
   },
   servers: [
     {
-      url: "http://localhost:5000",
+      url: "http://localhost:5000/api/v1",
       description: "Development server",
     },
   ],
@@ -21,11 +21,18 @@ const swaggerDefinition = {
         name: "accessToken",
         description: "httpOnly accessToken cookie set on login",
       },
+      bearerAuth: {
+        type: "http",
+        scheme: "bearer",
+        bearerFormat: "JWT",
+        description: "Mobile access token returned by login",
+      },
       verificationToken: {
         type: "http",
         scheme: "bearer",
         bearerFormat: "JWT",
-        description: "Short-lived JWT returned from /register, used for /verify-email and /resend-otp",
+        description:
+          "Short-lived JWT returned from /register, used for /verify-email and /resend-otp",
       },
     },
     responses: {
@@ -52,7 +59,10 @@ const swaggerDefinition = {
             schema: { $ref: "#/components/schemas/Error" },
             example: {
               success: false,
-              error: { code: "INVALID_ACCESS_TOKEN", message: "Invalid or expired access token" },
+              error: {
+                code: "INVALID_ACCESS_TOKEN",
+                message: "Invalid or expired access token",
+              },
             },
           },
         },
@@ -72,7 +82,10 @@ const swaggerDefinition = {
             schema: { $ref: "#/components/schemas/Error" },
             example: {
               success: false,
-              error: { code: "INTERNAL_SERVER_ERROR", message: "Internal server error" },
+              error: {
+                code: "INTERNAL_SERVER_ERROR",
+                message: "Internal server error",
+              },
             },
           },
         },
@@ -115,8 +128,16 @@ const swaggerDefinition = {
         required: ["name", "email", "password"],
         properties: {
           name: { type: "string", example: "Kunal Kumar" },
-          email: { type: "string", format: "email", example: "kunal@example.com" },
-          password: { type: "string", format: "password", example: "StrongPass123!" },
+          email: {
+            type: "string",
+            format: "email",
+            example: "kunal@example.com",
+          },
+          password: {
+            type: "string",
+            format: "password",
+            example: "StrongPass123!",
+          },
         },
       },
       RegisterResponse: {
@@ -126,7 +147,10 @@ const swaggerDefinition = {
           data: {
             type: "object",
             properties: {
-              verificationToken: { type: "string", example: "eyJhbGciOiJIUzI1NiJ9..." },
+              verificationToken: {
+                type: "string",
+                example: "eyJhbGciOiJIUzI1NiJ9...",
+              },
             },
             required: ["verificationToken"],
           },
@@ -137,16 +161,35 @@ const swaggerDefinition = {
         type: "object",
         required: ["otp"],
         properties: {
-          otp: { type: "string", example: "482910", minLength: 6, maxLength: 6 },
+          otp: {
+            type: "string",
+            example: "482910",
+            minLength: 6,
+            maxLength: 6,
+          },
         },
       },
       // ── Login ─────────────────────────────────────────────────────────────
       LoginRequest: {
         type: "object",
-        required: ["email", "password"],
+        required: ["email", "password", "client"],
         properties: {
-          email: { type: "string", format: "email", example: "kunal@example.com" },
-          password: { type: "string", format: "password", example: "StrongPass123!" },
+          email: {
+            type: "string",
+            format: "email",
+            example: "kunal@example.com",
+          },
+          password: {
+            type: "string",
+            format: "password",
+            example: "StrongPass123!",
+          },
+          client: {
+            type: "string",
+            enum: ["MOBILE", "DASHBOARD"],
+            description:
+              "MOBILE is restricted to citizens; DASHBOARD is restricted to responders and admins.",
+          },
         },
       },
       LoginResponse: {
@@ -157,6 +200,14 @@ const swaggerDefinition = {
             type: "object",
             properties: {
               user: { $ref: "#/components/schemas/UserProfile" },
+              accessToken: {
+                type: "string",
+                description: "Returned only for MOBILE logins.",
+              },
+              refreshToken: {
+                type: "string",
+                description: "Returned only for MOBILE logins.",
+              },
             },
           },
         },
@@ -177,10 +228,20 @@ const swaggerDefinition = {
       UserProfile: {
         type: "object",
         properties: {
-          id: { type: "string", format: "uuid", example: "550e8400-e29b-41d4-a716-446655440000" },
+          id: {
+            type: "string",
+            format: "uuid",
+            example: "550e8400-e29b-41d4-a716-446655440000",
+          },
           name: { type: "string", example: "Kunal Kumar" },
-          email: { type: "string", format: "email", example: "kunal@example.com" },
+          email: {
+            type: "string",
+            format: "email",
+            example: "kunal@example.com",
+          },
           emailVerified: { type: "boolean", example: true },
+          role: { type: "string", enum: ["CITIZEN", "RESPONDER", "ADMIN"] },
+          status: { type: "string", enum: ["ACTIVE", "INACTIVE", "SUSPENDED"] },
           createdAt: { type: "string", format: "date-time" },
         },
         required: ["id", "name", "email", "emailVerified", "createdAt"],

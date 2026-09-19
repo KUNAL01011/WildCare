@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+export const authClientSchema = z.enum(["MOBILE", "DASHBOARD"]);
+
 export const registerSchema = z.object({
   name: z
     .string()
@@ -35,7 +37,14 @@ export const loginSchema = z.object({
     .string()
     .min(1, "Password is required")
     .max(128, "Password must be at most 128 characters"),
+  client: authClientSchema,
 });
+
+export const refreshSchema = z.object({
+  refreshToken: z.string().min(1).optional(),
+});
+
+export const logoutSchema = refreshSchema;
 
 export const resendOtpSchema = z.object({
   // verificationToken is taken from the Authorization header, not body
@@ -45,3 +54,4 @@ export const resendOtpSchema = z.object({
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+export type RefreshInput = z.infer<typeof refreshSchema>;

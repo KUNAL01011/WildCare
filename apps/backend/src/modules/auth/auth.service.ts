@@ -36,6 +36,7 @@ export async function register(input: RegisterInput) {
         name: input.name,
         email,
         passwordHash,
+        role: "CITIZEN",
         otpHash,
         otpExpiresAt,
       },
@@ -187,6 +188,8 @@ export async function login(input: LoginInput) {
       email: true,
       passwordHash: true,
       emailVerified: true,
+      role: true,
+      status: true,
     },
   });
 
@@ -210,10 +213,30 @@ export async function login(input: LoginInput) {
     );
   }
 
+  if (user.status !== "ACTIVE") {
+    throw new AppError("ACCOUNT_INACTIVE", "This account is not active", 403);
+  }
+
+  if (input.client === "MOBILE" && user.role !== "CITIZEN") {
+    throw new AppError(
+      "AUTH_CLIENT_NOT_ALLOWED",
+      "This account must sign in through the dashboard",
+      403
+    );
+  }
+
+  if (input.client === "DASHBOARD" && user.role === "CITIZEN") {
+    throw new AppError(
+      "AUTH_CLIENT_NOT_ALLOWED",
+      "Citizen accounts must sign in through the mobile application",
+      403
+    );
+  }
+
   const familyId = crypto.randomUUID();
   const { token: refreshToken, hash: refreshTokenHash } =
     await signRefreshToken(user.id, familyId);
-  const accessToken = await signAccessToken(user.id);
+  const accessToken = await signAccessToken(user.id, user.role);
 
   await prisma.refreshToken.create({
     data: {
@@ -227,7 +250,7 @@ export async function login(input: LoginInput) {
   return {
     accessToken,
     refreshToken,
-    user: { id: user.id, name: user.name, email: user.email },
+    user: { id: user.id, name: user.name, email: user.email, role: user.role },
   };
 }
 
@@ -253,6 +276,7 @@ export async function refresh(rawRefreshToken: string) {
 
   const storedToken = await prisma.refreshToken.findUnique({
     where: { tokenHash },
+    include: { user: { select: { role: true, status: true } } },
   });
 
   // Token doesn't exist → possible reuse/deleted token
@@ -289,10 +313,17 @@ export async function refresh(rawRefreshToken: string) {
     );
   }
 
+  if (storedToken.user.status !== "ACTIVE") {
+    throw new AppError("ACCOUNT_INACTIVE", "This account is not active", 403);
+  }
+
   const { token: newRefreshToken, hash: newRefreshTokenHash } =
     await signRefreshToken(payload.userId, storedToken.familyId);
 
-  const newAccessToken = await signAccessToken(payload.userId);
+  const newAccessToken = await signAccessToken(
+    payload.userId,
+    storedToken.user.role
+  );
 
   // FIX: Use the interactive callback form of $transaction instead of the
   // array/batch form. The array form pre-builds Prisma promise objects before
@@ -346,6 +377,8 @@ export async function getMe(userId: string) {
       name: true,
       email: true,
       emailVerified: true,
+      role: true,
+      status: true,
       createdAt: true,
     },
   });
