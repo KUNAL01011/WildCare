@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    /* Type Checking */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+
+    /* Interop */
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+
+    /* Consistency */
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+
+    /* Modern */
+    "isolatedModules": true
+  }
+}

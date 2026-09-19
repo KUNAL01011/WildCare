@@ -1,0 +1,59 @@
+# Dependencies
+node_modules/
+.pnp
+.png.js
+node_modules
+learning.md
+/learning.md
+wip.md
+# Build outputs
+dist/
+build/
+.vite/
+.next/
+out/
+
+# Environment variables
+/.env
+/.env.local
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Coverage
+coverage/
+
+# Turbo
+.turbo/
+
+# TypeScript
+*.tsbuildinfo
+
+# Misc
+.cache/
+.temp/
+*.map
+Context.txt
+
+openapispec.md
+opentelementry.md
+testing.md
+questions.md
