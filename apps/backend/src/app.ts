@@ -5,13 +5,13 @@ import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import swaggerUi from "swagger-ui-express";
 
-import authRoutes from "./modules/auth/auth.routes.js";
 import healthRoutes from "./core/health/health.route.js";
 import { swaggerSpec } from "./config/swagger.js";
 
 import { requestLogger } from "./core/middleware/request-logger.middleware.js";
 import { apiRateLimiter } from "./core/middleware/rate-limit.middleware.js";
 import { errorHandler, notFoundHandler } from "./core/errors/error-handler.js";
+import routes from "./routes/index.js";
 
 const app = express();
 
@@ -44,7 +44,7 @@ app.use("/health", healthRoutes);
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // 8. Application routes
-app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1", routes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

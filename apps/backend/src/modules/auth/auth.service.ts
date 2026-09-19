@@ -17,16 +17,12 @@ import type {
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
 import { hashPassword, verifyPassword } from "@/lib/password.js";
 
-// ─── Register ────────────────────────────────────────────────────────────────
-
 export async function register(input: RegisterInput) {
   const email = input.email.toLowerCase();
-
   const passwordHash = await hashPassword(input.password);
   const otp = generateOtp();
   const otpHash = await hashPassword(otp);
   const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
-
   let userId: string;
 
   try {
@@ -41,7 +37,6 @@ export async function register(input: RegisterInput) {
         otpExpiresAt,
       },
       update: {
-        // Only update if NOT yet verified — enforced below after read
         name: input.name,
         passwordHash,
         otpHash,
@@ -57,7 +52,6 @@ export async function register(input: RegisterInput) {
         409
       );
     }
-
     userId = user.id;
   } catch (err) {
     if (err instanceof AppError) throw err;
@@ -72,14 +66,10 @@ export async function register(input: RegisterInput) {
   }
 
   const verificationToken = await signEmailVerificationToken(userId);
-
-  // Fire-and-forget: email goes into the queue, response returns immediately.
   sendVerificationEmail(email, otp);
 
   return { verificationToken };
 }
-
-// ─── Verify Email ─────────────────────────────────────────────────────────────
 
 export async function verifyEmail(userId: string, input: VerifyEmailInput) {
   const user = await prisma.user.findUnique({
@@ -94,7 +84,6 @@ export async function verifyEmail(userId: string, input: VerifyEmailInput) {
   if (!user) {
     throw new AppError("USER_NOT_FOUND", "User not found", 404);
   }
-
   if (user.emailVerified) {
     throw new AppError(
       "EMAIL_ALREADY_VERIFIED",
@@ -102,11 +91,9 @@ export async function verifyEmail(userId: string, input: VerifyEmailInput) {
       409
     );
   }
-
   if (!user.otpHash || !user.otpExpiresAt) {
     throw new AppError("INVALID_OTP", "No OTP found. Request a new one.", 400);
   }
-
   if (new Date() > user.otpExpiresAt) {
     throw new AppError(
       "OTP_EXPIRED",
@@ -116,7 +103,6 @@ export async function verifyEmail(userId: string, input: VerifyEmailInput) {
   }
 
   const isValid = await verifyPassword(input.otp, user.otpHash);
-
   if (!isValid) {
     throw new AppError("INVALID_OTP", "Invalid OTP", 400);
   }
@@ -129,8 +115,6 @@ export async function verifyEmail(userId: string, input: VerifyEmailInput) {
   return { message: "Email verified successfully" };
 }
 
-// ─── Resend OTP ───────────────────────────────────────────────────────────────
-
 export async function resendOtp(userId: string) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -140,7 +124,6 @@ export async function resendOtp(userId: string) {
   if (!user) {
     throw new AppError("USER_NOT_FOUND", "User not found", 404);
   }
-
   if (user.emailVerified) {
     throw new AppError(
       "EMAIL_ALREADY_VERIFIED",
@@ -149,7 +132,6 @@ export async function resendOtp(userId: string) {
     );
   }
 
-  // Block resend if OTP was issued < 1 minute ago
   if (user.otpExpiresAt) {
     const remainingMs = user.otpExpiresAt.getTime() - Date.now();
     if (remainingMs > 9 * 60 * 1000) {
@@ -171,11 +153,8 @@ export async function resendOtp(userId: string) {
   });
 
   sendVerificationEmail(user.email, otp);
-
   return { message: "Verification code sent" };
 }
-
-// ─── Login ────────────────────────────────────────────────────────────────────
 
 export async function login(input: LoginInput) {
   const email = input.email.toLowerCase();
@@ -193,7 +172,6 @@ export async function login(input: LoginInput) {
     },
   });
 
-  // Constant-time comparison even for missing users — prevents enumeration via timing
   const dummyHash =
     "$2b$12$invalidhashpadding000000000000000000000000000000000000";
   const passwordValid = user
@@ -254,8 +232,6 @@ export async function login(input: LoginInput) {
   };
 }
 
-// ─── Refresh ──────────────────────────────────────────────────────────────────
-
 export async function refresh(rawRefreshToken: string) {
   let payload: Awaited<ReturnType<typeof verifyRefreshToken>>;
 
@@ -279,12 +255,10 @@ export async function refresh(rawRefreshToken: string) {
     include: { user: { select: { role: true, status: true } } },
   });
 
-  // Token doesn't exist → possible reuse/deleted token
   if (!storedToken) {
     await prisma.refreshToken.deleteMany({
       where: { familyId: payload.familyId },
     });
-
     throw new AppError(
       "REFRESH_TOKEN_REUSE",
       "Refresh token reuse detected. Please login again.",
@@ -292,12 +266,10 @@ export async function refresh(rawRefreshToken: string) {
     );
   }
 
-  // Old/revoked token used again → reuse attack
   if (storedToken.revokedAt) {
     await prisma.refreshToken.deleteMany({
       where: { familyId: storedToken.familyId },
     });
-
     throw new AppError(
       "REFRESH_TOKEN_REUSE",
       "Refresh token reuse detected. Please login again.",
@@ -319,18 +291,11 @@ export async function refresh(rawRefreshToken: string) {
 
   const { token: newRefreshToken, hash: newRefreshTokenHash } =
     await signRefreshToken(payload.userId, storedToken.familyId);
-
   const newAccessToken = await signAccessToken(
     payload.userId,
     storedToken.user.role
   );
 
-  // FIX: Use the interactive callback form of $transaction instead of the
-  // array/batch form. The array form pre-builds Prisma promise objects before
-  // passing them in — with Prisma 6's new `prisma-client` generator this causes
-  // the transaction to throw because the operations are already "pending" by the
-  // time $transaction receives them. The callback form builds operations inside
-  // the transaction context (tx) and works correctly across all Prisma versions.
   await prisma.$transaction(async tx => {
     await tx.refreshToken.create({
       data: {
@@ -340,6 +305,7 @@ export async function refresh(rawRefreshToken: string) {
         familyId: storedToken.familyId,
       },
     });
+
     await tx.refreshToken.update({
       where: { id: storedToken.id },
       data: { revokedAt: new Date() },
@@ -352,8 +318,6 @@ export async function refresh(rawRefreshToken: string) {
   };
 }
 
-// ─── Logout ───────────────────────────────────────────────────────────────────
-
 export async function logout(rawRefreshToken: string) {
   const tokenHash = crypto
     .createHash("sha256")
@@ -364,10 +328,7 @@ export async function logout(rawRefreshToken: string) {
     where: { tokenHash, revokedAt: null },
     data: { revokedAt: new Date() },
   });
-  // updateMany is idempotent — no error if already revoked or missing
 }
-
-// ─── Me ───────────────────────────────────────────────────────────────────────
 
 export async function getMe(userId: string) {
   const user = await prisma.user.findUnique({

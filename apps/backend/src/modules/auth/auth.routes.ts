@@ -67,7 +67,6 @@ const router = Router();
  */
 router.post("/register", authRateLimiter, registerController);
 
-// ─── Verify Email ─────────────────────────────────────────────────────────────
 /**
  * @openapi
  * /api/v1/auth/verify-email:
@@ -116,7 +115,6 @@ router.post(
   verifyEmailController
 );
 
-// ─── Resend OTP ───────────────────────────────────────────────────────────────
 /**
  * @openapi
  * /api/v1/auth/resend-otp:
@@ -157,7 +155,6 @@ router.post(
   resendOtpController
 );
 
-// ─── Login ────────────────────────────────────────────────────────────────────
 /**
  * @openapi
  * /api/v1/auth/login:
@@ -173,7 +170,7 @@ router.post(
  *             $ref: '#/components/schemas/LoginRequest'
  *     responses:
  *       200:
- *         description: Login successful — cookies set
+ *         description: Login successful
  *         headers:
  *           Set-Cookie:
  *             description: accessToken and refreshToken httpOnly cookies
@@ -192,7 +189,7 @@ router.post(
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       403:
- *         description: Email not verified — includes a fresh verificationToken
+ *         description: Email not verified - includes a fresh verificationToken
  *         content:
  *           application/json:
  *             schema:
@@ -204,7 +201,6 @@ router.post(
  */
 router.post("/login", authRateLimiter, loginController);
 
-// ─── Refresh ──────────────────────────────────────────────────────────────────
 /**
  * @openapi
  * /api/v1/auth/refresh:
@@ -214,7 +210,7 @@ router.post("/login", authRateLimiter, loginController);
  *     description: Rotates the refresh token (token family rotation). Requires the `refreshToken` httpOnly cookie. Issues new `accessToken` and `refreshToken` cookies.
  *     responses:
  *       200:
- *         description: Tokens rotated — new cookies set
+ *         description: Tokens rotated - new cookies set
  *         content:
  *           application/json:
  *             schema:
@@ -230,14 +226,13 @@ router.post("/login", authRateLimiter, loginController);
  */
 router.post("/refresh", refreshController);
 
-// ─── Logout ───────────────────────────────────────────────────────────────────
 /**
  * @openapi
  * /api/v1/auth/logout:
  *   post:
  *     tags: [Auth]
  *     summary: Logout
- *     description: Revokes the current refresh token and clears auth cookies. Idempotent — safe to call even if already logged out.
+ *     description: Revokes the current refresh token and clears auth cookies. Idempotent - safe to call even if already logged out.
  *     responses:
  *       200:
  *         description: Logged out
@@ -250,7 +245,6 @@ router.post("/refresh", refreshController);
  */
 router.post("/logout", logoutController);
 
-// ─── Me ───────────────────────────────────────────────────────────────────────
 /**
  * @openapi
  * /api/v1/auth/me:
@@ -279,4 +273,5 @@ router.post("/logout", logoutController);
  *         $ref: '#/components/responses/InternalError'
  */
 router.get("/me", authenticateMiddleware, getMeController);
+
 export default router;

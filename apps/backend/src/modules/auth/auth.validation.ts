@@ -46,10 +46,7 @@ export const refreshSchema = z.object({
 
 export const logoutSchema = refreshSchema;
 
-export const resendOtpSchema = z.object({
-  // verificationToken is taken from the Authorization header, not body
-  // This schema is intentionally empty — the token is verified via JWT middleware
-});
+export const resendOtpSchema = z.object({});
 
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;

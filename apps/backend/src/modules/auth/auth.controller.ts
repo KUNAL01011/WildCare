@@ -27,7 +27,6 @@ export const registerController = asyncHandler(
   async (req: Request, res: Response) => {
     const input = registerSchema.parse(req.body);
     const result = await register(input);
-
     res.status(201).json({ success: true, data: result });
   }
 );
@@ -37,7 +36,6 @@ export const verifyEmailController = asyncHandler(
     const userId = req.user!.id; // set by verifyEmailTokenMiddleware
     const input = verifyEmailSchema.parse(req.body);
     const result = await verifyEmail(userId, input);
-
     res.status(200).json({ success: true, data: result });
   }
 );
@@ -46,7 +44,6 @@ export const resendOtpController = asyncHandler(
   async (req: Request, res: Response) => {
     const userId = req.user!.id; // set by verifyEmailTokenMiddleware
     const result = await resendOtp(userId);
-
     res.status(200).json({ success: true, data: result });
   }
 );
@@ -128,7 +125,6 @@ export const getMeController = asyncHandler(
   async (req: Request, res: Response) => {
     const userId = req.user!.id; // set by authenticateMiddleware
     const result = await getMe(userId);
-
     res.status(200).json({ success: true, data: result });
   }
 );
