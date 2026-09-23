@@ -1,0 +1,52 @@
+{
+  "expo": {
+    "name": "WildCare",
+    "slug": "wildcare",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1B4332"
+    },
+    "scheme": "mobile",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.kunamix.wildcare"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#1B4332",
+        "foregroundImage": "./assets/android-icon.png"
+      },
+      "package": "com.kunamix.wildcare",
+      "permissions": ["CAMERA", "ACCESS_FINE_LOCATION", "READ_EXTERNAL_STORAGE"]
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "WildCare needs camera access to capture wildlife incident photos."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "WildCare needs your location to record where the incident happened."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow WildCare to access your photos."
+        }
+      ]
+    ]
+  }
+}
