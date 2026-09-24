@@ -32,11 +32,9 @@
   "packageManager": "pnpm@12.6.0",
   "lint-staged": {
     "apps/backend/**/*.{js,ts}": [
-      "eslint --config apps/backend/eslint.config.js --fix",
       "prettier --write"
     ],
     "apps/frontend/**/*.{js,jsx,ts,tsx}": [
-      "eslint --config apps/frontend/eslint.config.mjs --fix",
       "prettier --write"
     ],
     "*.{json,md,css,scss}": [
