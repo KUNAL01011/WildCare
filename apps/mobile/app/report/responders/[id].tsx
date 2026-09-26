@@ -7,24 +7,27 @@ import {
   Alert,
   Linking,
   ActivityIndicator,
-} from 'react-native';
-import { useLocalSearchParams, router } from 'expo-router';
-import { useState, useCallback } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../../src/constants/colors';
+} from "react-native";
+import { useLocalSearchParams, router } from "expo-router";
+import { useState, useCallback } from "react";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import { COLORS } from "../../../src/constants/colors";
 import {
   useResponderMatches,
   useRecordContact,
-} from '../../../src/hooks/useResponders';
-import { ResponderCard } from '../../../src/components/shared/ResponderCard';
-import { ResponderDetailSheet } from '../../../src/components/shared/ResponderDetailSheet';
-import { Card } from '../../../src/components/ui/Card';
-import type { ResponderMatch } from '../../../src/api/responders';
+} from "../../../src/hooks/useResponders";
+import { ResponderCard } from "../../../src/components/shared/ResponderCard";
+import { ResponderDetailSheet } from "../../../src/components/shared/ResponderDetailSheet";
+import { Card } from "../../../src/components/ui/Card";
+import type { ResponderMatch } from "../../../src/api/responders";
+import {
+  Skeleton,
+  ResponderCardSkeleton,
+} from '../../../src/components/ui/Skeleton';
 
 export default function RespondersScreen() {
-  const { id: reportId } =
-    useLocalSearchParams<{ id: string }>();
+  const { id: reportId } = useLocalSearchParams<{ id: string }>();
 
   const {
     data: responders,
@@ -43,8 +46,8 @@ export default function RespondersScreen() {
     async (responder: ResponderMatch) => {
       if (!responder.phone) {
         Alert.alert(
-          'No phone number',
-          'This responder has not provided a phone number.'
+          "No phone number",
+          "This responder has not provided a phone number."
         );
         return;
       }
@@ -68,7 +71,7 @@ export default function RespondersScreen() {
         router.push(`/report/tracking/${reportId}`);
       } else {
         Alert.alert(
-          'Cannot make call',
+          "Cannot make call",
           `Please call ${responder.name} at ${responder.phone}`
         );
       }
@@ -79,22 +82,27 @@ export default function RespondersScreen() {
   // ── Loading ───────────────────────────────────────────
   if (isLoading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-        <Text style={styles.loadingText}>
-          Finding nearby responders…
-        </Text>
-      </View>
+      <SafeAreaView style={styles.safe} edges={["bottom"]}>
+        <View style={styles.skeletonContent}>
+          <Skeleton height={72} borderRadius={12} />
+          <View style={{ height: 8 }} />
+          {[1, 2, 3].map(i => (
+            <View key={i} style={{ marginBottom: 12 }}>
+              <ResponderCardSkeleton />
+            </View>
+          ))}
+        </View>
+      </SafeAreaView>
     );
   }
 
   const list = responders ?? [];
 
   return (
-    <SafeAreaView style={styles.safe} edges={['bottom']}>
+    <SafeAreaView style={styles.safe} edges={["bottom"]}>
       <FlatList
         data={list}
-        keyExtractor={(item) => item.id}
+        keyExtractor={item => item.id}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -116,30 +124,27 @@ export default function RespondersScreen() {
                   color={COLORS.primaryMuted}
                 />
                 <Text style={styles.infoText}>
-                  These responders are matched based on your
-                  incident location and animal type. Call the
-                  best match and update the response status.
+                  These responders are matched based on your incident location
+                  and animal type. Call the best match and update the response
+                  status.
                 </Text>
               </View>
             </Card>
 
             <Text style={styles.sectionTitle}>
               {list.length > 0
-                ? `${list.length} Matched Responder${list.length > 1 ? 's' : ''}`
-                : 'No Responders Found'}
+                ? `${list.length} Matched Responder${list.length > 1 ? "s" : ""}`
+                : "No Responders Found"}
             </Text>
           </View>
         }
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={styles.emptyIcon}>🔍</Text>
-            <Text style={styles.emptyTitle}>
-              No responders matched
-            </Text>
+            <Text style={styles.emptyTitle}>No responders matched</Text>
             <Text style={styles.emptyText}>
-              We couldn't find verified responders near your
-              incident location. Try contacting local wildlife
-              or forest authorities directly.
+              We couldn't find verified responders near your incident location.
+              Try contacting local wildlife or forest authorities directly.
             </Text>
           </View>
         }
@@ -151,9 +156,7 @@ export default function RespondersScreen() {
             onViewDetails={setSelectedResponder}
           />
         )}
-        ItemSeparatorComponent={() => (
-          <View style={styles.separator} />
-        )}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListFooterComponent={
           list.length > 0 ? (
             <View style={styles.footer}>
@@ -163,9 +166,8 @@ export default function RespondersScreen() {
                 color={COLORS.textMuted}
               />
               <Text style={styles.footerText}>
-                WildCare does not automatically dispatch
-                responders. Calling initiates contact on your
-                behalf.
+                WildCare does not automatically dispatch responders. Calling
+                initiates contact on your behalf.
               </Text>
             </View>
           ) : null
@@ -176,7 +178,7 @@ export default function RespondersScreen() {
       <ResponderDetailSheet
         responder={selectedResponder}
         onClose={() => setSelectedResponder(null)}
-        onCall={(r) => {
+        onCall={r => {
           setSelectedResponder(null);
           handleCall(r);
         }}
@@ -192,8 +194,8 @@ const styles = StyleSheet.create({
   },
   centered: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     gap: 12,
     backgroundColor: COLORS.background,
   },
@@ -201,6 +203,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.textSecondary,
   },
+  skeletonContent: {
+  padding: 20,
+  paddingTop: 16,
+},
   content: {
     padding: 20,
     paddingBottom: 40,
@@ -216,9 +222,9 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   infoRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 10,
-    alignItems: 'flex-start',
+    alignItems: "flex-start",
   },
   infoText: {
     flex: 1,
@@ -228,7 +234,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
     color: COLORS.textPrimary,
   },
 
@@ -239,7 +245,7 @@ const styles = StyleSheet.create({
 
   // Empty state
   emptyState: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingTop: 40,
     gap: 10,
     paddingHorizontal: 20,
@@ -249,21 +255,21 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
     color: COLORS.textPrimary,
   },
   emptyText: {
     fontSize: 13,
     color: COLORS.textMuted,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 20,
   },
 
   // Footer
   footer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
-    alignItems: 'flex-start',
+    alignItems: "flex-start",
     paddingTop: 20,
     paddingHorizontal: 4,
   },

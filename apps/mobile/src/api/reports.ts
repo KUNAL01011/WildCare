@@ -23,6 +23,38 @@ export type ReportDetail = {
   description?: string | null;
   createdAt: string;
   submittedAt?: string | null;
+  resolvedAt?: string | null;
+};
+
+export type ReportEvent = {
+  id: string;
+  type: string;
+  description: string | null;
+  actorType: string | null;
+  createdAt: string;
+};
+
+export type ContactAttempt = {
+  id: string;
+  bodyId: string;
+  bodyName?: string;
+  type: string;
+  status: string;
+  initiatedAt: string;
+};
+
+export type FullReportDetail = ReportDetail & {
+  events?: ReportEvent[];
+  contacts?: ContactAttempt[];
+  feedback?: {
+    id: string;
+    overallRating: number;
+    responseTimeRating: number;
+    professionalismRating: number;
+    outcome: string;
+    comment: string | null;
+    createdAt: string;
+  } | null;
 };
 
 type ReportsListResponse = {
@@ -46,6 +78,14 @@ export const reportsApi = {
     return res.data.data;
   },
 
+  // Full detail with events + contacts + feedback
+  getFullById: async (
+    reportId: string
+  ): Promise<FullReportDetail> => {
+    const res = await apiClient.get(`/reports/${reportId}`);
+    return res.data.data;
+  },
+
   patch: async (
     reportId: string,
     data: {
@@ -55,12 +95,21 @@ export const reportsApi = {
       description?: string;
     }
   ) => {
-    const res = await apiClient.patch(`/reports/${reportId}`, data);
+    const res = await apiClient.patch(
+      `/reports/${reportId}`,
+      data
+    );
     return res.data.data;
   },
 
   submit: async (reportId: string) => {
-    const res = await apiClient.post(`/reports/${reportId}/submit`);
+    const res = await apiClient.post(
+      `/reports/${reportId}/submit`
+    );
     return res.data.data;
   },
 };
+
+
+// Add to reportsApi object:
+// reportsApi.getFullById

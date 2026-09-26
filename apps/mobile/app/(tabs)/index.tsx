@@ -15,6 +15,8 @@ import { useReports } from "../../src/hooks/useReports";
 import { COLORS } from "../../src/constants/colors";
 import { ReportCard } from "../../src/components/shared/ReportCard";
 import { ActiveReportBanner } from "../../src/components/shared/ActiveReportBanner";
+import { Alert } from "react-native";
+import { ReportCardSkeleton } from "../../src/components/ui/Skeleton";
 import { Button } from "../../src/components/ui/Button";
 
 const ACTIVE_STATUSES = [
@@ -68,7 +70,19 @@ export default function HomeScreen() {
             </Text>
           </View>
 
-          <TouchableOpacity onPress={signOut} style={styles.avatarWrapper}>
+          <TouchableOpacity
+            onPress={() => {
+              Alert.alert("Sign Out", "Are you sure you want to sign out?", [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Sign Out",
+                  style: "destructive",
+                  onPress: signOut,
+                },
+              ]);
+            }}
+            style={styles.avatarWrapper}
+          >
             {user?.profileImage ? (
               <Image
                 source={{ uri: user.profileImage }}
@@ -112,8 +126,10 @@ export default function HomeScreen() {
           </View>
 
           {isLoading ? (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>Loading reports…</Text>
+            <View style={styles.skeletonList}>
+              {[1, 2, 3].map(i => (
+                <ReportCardSkeleton key={i} />
+              ))}
             </View>
           ) : recentReports.length === 0 ? (
             <View style={styles.emptyState}>
@@ -190,6 +206,10 @@ const styles = StyleSheet.create({
     color: COLORS.textInverse,
   },
 
+  // Add inside styles:
+  skeletonList: {
+    gap: 10,
+  },
   // Create CTA card
   createCard: {
     backgroundColor: COLORS.primaryLight,

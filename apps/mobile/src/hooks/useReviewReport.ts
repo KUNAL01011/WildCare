@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { reportsApi } from "../api/reports";
 import { REPORTS_KEY } from "./useReports";
+import { useToast } from "../components/ui/Toast";
 
 type ReviewFields = {
   animalName?: string;
@@ -12,33 +13,33 @@ type ReviewFields = {
 
 export const useReviewReport = (reportId: string) => {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // Auto-save citizen edits
   const save = useCallback(
     async (fields: ReviewFields) => {
       setIsSaving(true);
       setSaveError(null);
       try {
         await reportsApi.patch(reportId, fields);
-        // Invalidate so detail screen refetches
         queryClient.invalidateQueries({
           queryKey: [REPORTS_KEY, reportId],
         });
+        showToast("Changes saved", "success");
       } catch (err: any) {
-        setSaveError(err?.message ?? "Could not save changes.");
+        setSaveError(err?.message ?? "Could not save.");
+        showToast("Could not save changes", "error");
         throw err;
       } finally {
         setIsSaving(false);
       }
     },
-    [reportId]
+    [reportId, showToast]
   );
 
-  // Final submission
   const submit = useCallback(async () => {
     setIsSubmitting(true);
     setSubmitError(null);
@@ -47,13 +48,15 @@ export const useReviewReport = (reportId: string) => {
       queryClient.invalidateQueries({
         queryKey: [REPORTS_KEY],
       });
+      showToast("Report submitted!", "success");
     } catch (err: any) {
-      setSubmitError(err?.message ?? "Could not submit report.");
+      setSubmitError(err?.message ?? "Could not submit.");
+      showToast("Submission failed", "error");
       throw err;
     } finally {
       setIsSubmitting(false);
     }
-  }, [reportId]);
+  }, [reportId, showToast]);
 
   return {
     save,
