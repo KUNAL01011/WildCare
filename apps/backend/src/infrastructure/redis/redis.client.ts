@@ -14,7 +14,7 @@ function createRedisClient(): Redis | null {
   }
 
   const client = new Redis(env.REDIS_URL, {
-    maxRetriesPerRequest: 2,
+    maxRetriesPerRequest: null,
     lazyConnect: false,
     // Don't let a Redis outage take the process down; retry with backoff.
     retryStrategy: times => Math.min(times * 200, 2000),

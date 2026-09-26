@@ -27,7 +27,7 @@ async function start(): Promise<void> {
       );
     });
   } catch (error) {
-    logger.error({ error }, "Failed to start server");
+    logger.error({ err: error instanceof Error ? { message: error.message, stack: error.stack } : error }, "Failed to start server");
     process.exit(1);
   }
 }

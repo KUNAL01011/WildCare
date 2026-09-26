@@ -1,4 +1,5 @@
 import express, { type Application } from "express";
+import path from "node:path";
 import cors from "cors";
 import helmet from "helmet";
 import compression from "compression";
@@ -15,6 +16,7 @@ import { requestLogger } from "./core/logger/http.logger";
 
 // routes
 import healthRoutes from "./modules/health/health.route";
+import apiRoutes from "./routes/index";
 
 const app: Application = express();
 
@@ -43,7 +45,7 @@ app.use(
 
 app.use(
   cors({
-    origin: env.CORSORIGINS,
+    origin: env.CORSORIGINS.split(",").map(s => s.trim()),
     credentials: true,
     optionsSuccessStatus: 200,
   })
@@ -115,7 +117,7 @@ if (env.NODE_ENV !== "production") {
  * =========================================================
  */
 
-// app.use("/api", apiRateLimiter, apiRoutes);
+app.use("/api/v1", apiRateLimiter, apiRoutes);
 
 /**
  * =========================================================

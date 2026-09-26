@@ -1,21 +1,15 @@
-// import { SignJWT, jwtVerify } from "jose";
 import { env } from "@/config/env";
 import * as jose from "jose";
-
 import crypto from "node:crypto";
-
-// ─── Key helpers ─────────────────────────────────────────────────────────────
 
 const encode = (secret: string) => new TextEncoder().encode(secret);
 
 const accessSecret = encode(env.ACCESS_SECRET);
 const refreshSecret = encode(env.REFRESH_SECRET);
-const otpVerifySecret = encode(env.OTP_VERIFY_SECRET);
-
-// ─── Payload shapes ──────────────────────────────────────────────────────────
 
 export interface AccessTokenPayload {
   userId: string;
+  role: "citizen" | "admin";
   type: "access";
 }
 
@@ -25,21 +19,20 @@ export interface RefreshTokenPayload {
   type: "refresh";
 }
 
-export interface EmailVerificationTokenPayload {
-  userId: string;
-  type: "email_verification";
-}
-
 // ─── Access Token ─────────────────────────────────────────────────────────────
 
-export async function signAccessToken(userId: string): Promise<string> {
+export async function signAccessToken(
+  userId: string,
+  role: "citizen" | "admin"
+): Promise<string> {
   return new jose.SignJWT({
     userId,
+    role,
     type: "access",
   } satisfies AccessTokenPayload)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime("15m")
+    .setExpirationTime("7d")
     .sign(accessSecret);
 }
 
@@ -56,7 +49,6 @@ export async function verifyAccessToken(
 }
 
 // ─── Refresh Token ────────────────────────────────────────────────────────────
-// Raw token is stored in a cookie; we only persist a SHA-256 hash in the DB.
 
 export async function signRefreshToken(
   userId: string,
@@ -90,29 +82,33 @@ export async function verifyRefreshToken(
   return payload as unknown as RefreshTokenPayload;
 }
 
-// ─── Email Verification Token ─────────────────────────────────────────────────
+// ─── Google ID Token Verification ─────────────────────────────────────────────
 
-export async function signEmailVerificationToken(
-  userId: string
-): Promise<string> {
-  return new jose.SignJWT({
-    userId,
-    type: "email_verification",
-  } satisfies EmailVerificationTokenPayload)
-    .setProtectedHeader({ alg: "HS256" })
-    .setIssuedAt()
-    .setExpirationTime("1h")
-    .sign(otpVerifySecret);
+const GOOGLE_JWKS = jose.createRemoteJWKSet(
+  new URL("https://www.googleapis.com/oauth2/v3/certs")
+);
+
+export interface GoogleTokenPayload {
+  sub: string;
+  email: string;
+  name: string;
+  picture?: string;
+  email_verified?: boolean;
 }
 
-export async function verifyEmailVerificationToken(
-  token: string
-): Promise<EmailVerificationTokenPayload> {
-  const { payload } = await jose.jwtVerify(token, otpVerifySecret);
+export async function verifyGoogleIdToken(
+  idToken: string
+): Promise<GoogleTokenPayload> {
+  const { payload } = await jose.jwtVerify(idToken, GOOGLE_JWKS, {
+    issuer: ["https://accounts.google.com", "accounts.google.com"],
+    audience: env.GOOGLE_CLIENT_ID,
+  });
 
-  if (payload["type"] !== "email_verification") {
-    throw new Error("Invalid token type");
-  }
-
-  return payload as unknown as EmailVerificationTokenPayload;
+  return {
+    sub: payload.sub!,
+    email: payload["email"] as string,
+    name: payload["name"] as string,
+    picture: payload["picture"] as string | undefined,
+    email_verified: payload["email_verified"] as boolean | undefined,
+  };
 }

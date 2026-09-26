@@ -2,9 +2,11 @@ packages:
   - "apps/*"
   - "packages/*"
 allowBuilds:
+  '@google/genai': true
   '@scarf/scarf': false
   argon2: true
   esbuild: true
   msgpackr-extract: true
+  protobufjs: true
   unrs-resolver: true
   workerd: true

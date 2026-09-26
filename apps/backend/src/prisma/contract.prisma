@@ -1,21 +1,341 @@
 // use prisma-8
 
-model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  username  String?
-  name      String?
-  posts     Post[]
-  createdAt TimestamptzString @default(now())
-  updatedAt temporal.updatedAtString()
+// ─── Enums ─────────────────────────────────────────────────────────────
+
+enum ReportStatus {
+  DRAFT
+  ANALYZING
+  READY_FOR_REVIEW
+  SUBMITTED
+  RESPONDER_CONTACTED
+  RESPONDER_ACCEPTED
+  IN_PROGRESS
+  RESOLVED
+  UNABLE_TO_REACH_RESPONDER
+  CANCELLED
 }
 
-model Post {
-  id        Int      @id @default(autoincrement())
-  title     String
-  content   String?
-  author    User     @relation(fields: [authorId], references: [id])
-  authorId  Int
-  createdAt TimestamptzString @default(now())
-  updatedAt temporal.updatedAtString()
+enum BodyType {
+  GOVERNMENT
+  NGO
+  PRIVATE
+}
+
+enum VerificationStatus {
+  PENDING
+  UNDER_REVIEW
+  VERIFIED
+  REJECTED
+  SUSPENDED
+}
+
+enum AvailabilityStatus {
+  AVAILABLE
+  UNAVAILABLE
+  UNKNOWN
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  ADMIN
+}
+
+enum AdminStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ContactType {
+  PHONE
+}
+
+enum ContactStatus {
+  INITIATED
+}
+
+enum ServiceType {
+  WILDLIFE_RESCUE
+  INJURED_ANIMAL
+  TRAPPED_ANIMAL
+  DEAD_ANIMAL
+  VETERINARY_SUPPORT
+  EMERGENCY_RESPONSE
+}
+
+enum FeedbackOutcome {
+  SUCCESSFUL
+  PARTIALLY_SUCCESSFUL
+  UNSUCCESSFUL
+  UNKNOWN
+}
+
+// ─── Models ────────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(uuid())
+  googleId     String   @unique
+  name         String
+  email        String   @unique
+  profileImage String?
+
+  reports      Report[]
+  feedback     Feedback[]
+  contacts     ContactAttempt[]
+
+  createdAt    TimestamptzString @default(dbgenerated("now()"))
+  updatedAt    temporal.updatedAtString()
+}
+
+model AdminUser {
+  id           String      @id @default(uuid())
+  email        String      @unique
+  name         String
+  passwordHash String
+  role         AdminRole   @default(ADMIN)
+  status       AdminStatus @default(ACTIVE)
+
+  createdAt    TimestamptzString @default(dbgenerated("now()"))
+  updatedAt    temporal.updatedAtString()
+}
+
+model Report {
+  id                 String       @id @default(uuid())
+  reportNumber       String       @unique
+  userId             String
+
+  status             ReportStatus @default(DRAFT)
+
+  animalType         String?
+  animalName         String?
+  aiCondition        String?
+  citizenCondition   String?
+  severity           String?
+  description        String?
+
+  latitude           Float
+  longitude          Float
+  state              String?
+  district           String?
+  city               String?
+  postalCode         String?
+  address            String?
+
+  incidentOccurredAt TimestamptzString?
+  submittedAt        TimestamptzString?
+  resolvedAt         TimestamptzString?
+
+  user               User     @relation(fields: [userId], references: [id])
+  images             ReportImage[]
+  aiAnalyses         AIAnalysis[]
+  matches            ReportResponderMatch[]
+  contacts           ContactAttempt[]
+  feedback           Feedback[]
+  events             ReportEvent[]
+
+  createdAt          TimestamptzString @default(dbgenerated("now()"))
+  updatedAt          temporal.updatedAtString()
+
+  @@index([userId])
+  @@index([status])
+  @@index([state, district, city])
+}
+
+model ReportImage {
+  id          String   @id @default(uuid())
+  reportId    String
+  storageKey  String
+  url         String
+  mimeType    String
+  fileSize    Int
+  sortOrder   Int      @default(0)
+
+  report      Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  createdAt   TimestamptzString @default(dbgenerated("now()"))
+
+  @@index([reportId])
+}
+
+model AIAnalysis {
+  id                    String   @id @default(uuid())
+  reportId              String
+
+  animalName            String?
+  animalConfidence      Float?
+  condition             String?
+  conditionConfidence   Float?
+  severity              String?
+  severityConfidence    Float?
+
+  observations          Json?
+  rawResponse           Json?
+
+  model                 String?
+  modelVersion          String?
+  status                String   @default("PENDING")
+
+  report                Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  createdAt             TimestamptzString @default(dbgenerated("now()"))
+  updatedAt             temporal.updatedAtString()
+
+  @@index([reportId])
+}
+
+model Location {
+  id          String   @id @default(uuid())
+  countryCode String   @default("IN")
+  countryName String   @default("India")
+  state       String
+  district    String
+  city        String
+  postalCode  String?
+  latitude    Float?
+  longitude   Float?
+
+  createdAt   TimestamptzString @default(dbgenerated("now()"))
+
+  @@unique([state, district, city])
+}
+
+model ResponderBody {
+  id                  String             @id @default(uuid())
+  name                String
+  type                BodyType
+  description         String?
+
+  phone               String?
+  email               String?
+  website             String?
+
+  address             String?
+  state               String?
+  district            String?
+  city                String?
+  postalCode          String?
+
+  latitude            Float?
+  longitude           Float?
+
+  verificationStatus  VerificationStatus @default(PENDING)
+  availabilityStatus  AvailabilityStatus @default(UNKNOWN)
+
+  services            ResponderService[]
+  animalSupport       ResponderAnimalSupport[]
+  matches             ReportResponderMatch[]
+  contacts            ContactAttempt[]
+  feedback            Feedback[]
+
+  createdAt           TimestamptzString @default(dbgenerated("now()"))
+  updatedAt           temporal.updatedAtString()
+  verifiedAt          TimestamptzString?
+
+  @@index([type])
+  @@index([state, district, city])
+  @@index([verificationStatus])
+}
+
+model ResponderService {
+  id          String      @id @default(uuid())
+  bodyId      String
+  serviceType ServiceType
+
+  body        ResponderBody @relation(fields: [bodyId], references: [id], onDelete: Cascade)
+
+  createdAt   TimestamptzString @default(dbgenerated("now()"))
+
+  @@unique([bodyId, serviceType])
+}
+
+model ResponderAnimalSupport {
+  id          String   @id @default(uuid())
+  bodyId      String
+  animalType  String
+
+  body        ResponderBody @relation(fields: [bodyId], references: [id], onDelete: Cascade)
+
+  createdAt   TimestamptzString @default(dbgenerated("now()"))
+
+  @@unique([bodyId, animalType])
+}
+
+model ReportResponderMatch {
+  id              String   @id @default(uuid())
+  reportId        String
+  bodyId          String
+
+  distanceKm      Float?
+  matchReason     String?
+
+  rank            Int
+  isRecommended   Boolean  @default(false)
+
+  report          Report        @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  body            ResponderBody @relation(fields: [bodyId], references: [id])
+
+  createdAt       TimestamptzString @default(dbgenerated("now()"))
+
+  @@index([reportId])
+  @@index([bodyId])
+}
+
+model ContactAttempt {
+  id          String        @id @default(uuid())
+  reportId    String
+  bodyId      String
+  userId      String
+
+  type        ContactType   @default(PHONE)
+  status      ContactStatus @default(INITIATED)
+
+  initiatedAt TimestamptzString @default(dbgenerated("now()"))
+
+  report      Report        @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  body        ResponderBody @relation(fields: [bodyId], references: [id])
+  user        User          @relation(fields: [userId], references: [id])
+
+  createdAt   TimestamptzString @default(dbgenerated("now()"))
+  updatedAt   temporal.updatedAtString()
+
+  @@index([reportId])
+  @@index([bodyId])
+}
+
+model ReportEvent {
+  id          String   @id @default(uuid())
+  reportId    String
+  type        String
+  description String?
+  actorType   String?
+  actorId     String?
+
+  report      Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  createdAt   TimestamptzString @default(dbgenerated("now()"))
+
+  @@index([reportId])
+}
+
+model Feedback {
+  id                    String          @id @default(uuid())
+  reportId              String
+  bodyId                String
+  userId                String
+
+  overallRating         Int
+  responseTimeRating    Int
+  professionalismRating Int
+
+  outcome               FeedbackOutcome
+  comment               String?
+
+  report                Report        @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  body                  ResponderBody @relation(fields: [bodyId], references: [id])
+  user                  User          @relation(fields: [userId], references: [id])
+
+  createdAt             TimestamptzString @default(dbgenerated("now()"))
+  updatedAt             temporal.updatedAtString()
+
+  @@unique([reportId, userId])
+  @@index([bodyId])
 }
